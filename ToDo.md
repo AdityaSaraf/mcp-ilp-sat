@@ -10,6 +10,7 @@
 3. Test with at least one Partial-Weighted MaxSAT solver. (To do a sanity check, make sure the solution has the same optimal value as the ILP solvers).
     * Think of *multiple* MCP to MaxSAT encodings. Set up the encoding through the solver.
     * Test the data sets on the solver.
+4. Create a demo! Not sure what this means right now, maybe we can have a visualization of how fast the different methods process the data? We'll have to see.
 
 Stretch Goals:
 1. Easy: Try more weighted MCP as well.
