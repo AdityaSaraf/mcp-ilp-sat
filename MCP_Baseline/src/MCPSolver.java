@@ -1,11 +1,17 @@
+import gurobi.GRBEnv;
+import gurobi.GRBException;
+import net.sf.javailp.Constraint;
 import net.sf.javailp.Linear;
 import net.sf.javailp.OptType;
 import net.sf.javailp.Problem;
 import net.sf.javailp.Result;
 import net.sf.javailp.Solver;
 import net.sf.javailp.SolverFactory;
+import net.sf.javailp.SolverFactoryGLPK;
+import net.sf.javailp.SolverFactoryGurobi;
 import net.sf.javailp.SolverFactoryLpSolve;
 import net.sf.javailp.VarType;
+import org.gnu.glpk.GLPK;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,7 +64,7 @@ public class MCPSolver {
     }
 
     public Set<Integer> unweightedILP(List<String> sentenceStrings,
-                                             int numSummarySentences) {
+                                             int numSummarySentences){
         Set<String> vocabulary = new HashSet<>();
         List<Set<String>> sentenceSets = new ArrayList<>(sentenceStrings.size());
         Map<String, Set<Integer>> wordToSentIdx = new HashMap<>();
@@ -80,7 +86,7 @@ public class MCPSolver {
             }
             vocabulary.addAll(sentenceSet);
         }
-        SolverFactory factory = new SolverFactoryLpSolve();
+        SolverFactory factory = new SolverFactoryGLPK();
         Problem problem = new Problem();
         // the OPT function is the sum of all words
         Linear optFunction = new Linear();
@@ -88,12 +94,16 @@ public class MCPSolver {
         // from some chosen set
         Linear wordConstraints = new Linear();
         for (String word : vocabulary) {
-            optFunction.add(1, word);
+            String name = word;
+            if (name.length() > 250) {
+                name = name.substring(0, 250);
+            }
+            optFunction.add(1, name);
             for (Integer idx : wordToSentIdx.get(word)) {
                 wordConstraints.add(1, idx);
             }
-            wordConstraints.add(-1, word);
-            problem.add(wordConstraints, ">=", 0);
+            wordConstraints.add(-1, name);
+            problem.add(name, wordConstraints, ">=", 0);
             wordConstraints = new Linear();
         }
         problem.setObjective(optFunction, OptType.MAX);
@@ -103,9 +113,17 @@ public class MCPSolver {
         for (Integer i = 0; i < sentenceSets.size(); i++) {
             setConstraints.add(1, i);
         }
-        problem.add(setConstraints, "<=", numSummarySentences);
+        problem.add("Set Constraint", setConstraints, "<=", numSummarySentences);
         for (Object variable : problem.getVariables()) {
             problem.setVarType(variable, VarType.BOOL);
+        }
+        for (Constraint constraint : problem.getConstraints()) {
+            String name = constraint.getName();
+            if (name.length() > 255) {
+                System.out.println(name);
+                System.out.println(name.length());
+                System.out.println();
+            }
         }
         Solver solver = factory.get();
         solver.setParameter(Solver.VERBOSE, 0);

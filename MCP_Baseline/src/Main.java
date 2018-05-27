@@ -43,7 +43,6 @@ public class Main {
     static List<String> stopWords = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
-        long startTime = System.currentTimeMillis();
         File directory = new File("data/CNN_DailyMail_1k");
         File[] files = directory.listFiles();
 
@@ -61,55 +60,69 @@ public class Main {
                 documents.add(parseFile(file));
             }
         }
-        List<List<String>> documentSentences = new ArrayList<>();
-        for (LabelledDocument document : documents) {
-            documentSentences.add(document.filteredSentences);
-        }
+//        List<List<String>> documentSentences = new ArrayList<>();
+//        for (LabelledDocument document : documents) {
+//            documentSentences.add(document.filteredSentences);
+//        }
 
-        TFIDF tfidf = new TFIDF(documentSentences);
+        TFIDF tfidf = null;//new TFIDF(documentSentences);
         MCPSolver mcpSolver = new MCPSolver(tfidf);
+        // warm up the JVM
+        for (int i = 0; i < 3; i++) {
+            long time = run(documents, mcpSolver);
+            System.out.println("WARMUP: Time elapsed for iteration " + i + " in ms: " + time);
+        }
+        // actual trials
+        long total = 0;
+        for (int i = 0; i < 10; i++) {
+            long time = run(documents, mcpSolver);
+            System.out.println("Time elapsed for iteration " + i + " in ms: " + time);
+            total += time;
+        }
+        System.out.println("Average time: " + (total/10));
+    }
 
+    private static long run(List<LabelledDocument> documents, MCPSolver mcpSolver) {
+        long startTime = System.currentTimeMillis();
         double total = 0;
-        int wc = 0;
         for (int i1 = 0; i1 < documents.size(); i1++) {
             LabelledDocument document = documents.get(i1);
+//            System.out.println(document.fileName);
             if (i1 % 250 == 0) {
-                System.out.println("Finished with "+i1);
-                System.out.println("Time elapsed: "+(System.currentTimeMillis() - startTime));
+//                System.out.println("Finished with "+i1);
+//                System.out.println("Time elapsed: "+(System.currentTimeMillis() - startTime));
+                System.gc();
             }
             //            Set<Integer> generatedSummary = mcpSolver.simpleGreedy(document.filteredSentences, document.lengthSummary);
-                        Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, 3);
-//            Set<Integer> generatedSummary = mcpSolver.weightedILP(document.filteredSentences, 3);
+            Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, 3);
+            //            Set<Integer> generatedSummary = mcpSolver.weightedILP(document.filteredSentences, 3);
             List<String> systemSummary = new ArrayList<>();
             List<String> gsSummary = new ArrayList<>();
             for (Integer i : generatedSummary) {
                 systemSummary.add(document.originalSentences.get(i));
-                wc += document.originalSentences.get(i).split(" ").length;
             }
             for (int i : document.answerNums) {
                 gsSummary.add(document.originalSentences.get(i));
             }
             double rougeScore = test(systemSummary, gsSummary);
             total += rougeScore;
-                        System.out.println(rougeScore);
-//            //             prints the generated summary
-//            File outputFile = new File(outputDir, document.fileName);
-//            if (outputFile.exists()) {
-//                outputFile.delete();
-//            }
-//            outputFile.createNewFile();
-//            PrintWriter writer = new PrintWriter(outputFile);
-//            for (int i : generatedSummary) {
-//                String sent = document.originalSentences.get(i);
-//                //                System.out.println(sent);
-//                writer.println(sent);
-//            }
-//            writer.flush();
+            //                        System.out.println(rougeScore);
+            //            //             prints the generated summary
+            //            File outputFile = new File(outputDir, document.fileName);
+            //            if (outputFile.exists()) {
+            //                outputFile.delete();
+            //            }
+            //            outputFile.createNewFile();
+            //            PrintWriter writer = new PrintWriter(outputFile);
+            //            for (int i : generatedSummary) {
+            //                String sent = document.originalSentences.get(i);
+            //                //                System.out.println(sent);
+            //                writer.println(sent);
+            //            }
+            //            writer.flush();
         }
-        System.out.println("wc = " + wc);
-        System.out.println("Average: " + total/documents.size());
-        System.out.println("Time elapsed (ms): " + (System.currentTimeMillis() - startTime));
-
+        System.out.println("Average ROUGE: " + total/documents.size());
+        return System.currentTimeMillis() - startTime;
     }
 
     private static double test(List<String> systemSummary, List<String> goldStandardSummary) {
