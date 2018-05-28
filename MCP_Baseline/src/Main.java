@@ -43,7 +43,7 @@ public class Main {
     static List<String> stopWords = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
-        File directory = new File("data/CNN_DailyMail_1k");
+        File directory = new File("data/law_stories_top_100");
         File[] files = directory.listFiles();
 
         File stopWordFile = new File("stopwords.txt");
@@ -88,13 +88,13 @@ public class Main {
         for (int i1 = 0; i1 < documents.size(); i1++) {
             LabelledDocument document = documents.get(i1);
 //            System.out.println(document.fileName);
-            if (i1 % 250 == 0) {
-//                System.out.println("Finished with "+i1);
-//                System.out.println("Time elapsed: "+(System.currentTimeMillis() - startTime));
+            if (i1 % 20 == 0) {
+                System.out.println("Finished with "+i1);
+                System.out.println("Time elapsed: "+(System.currentTimeMillis() - startTime));
                 System.gc();
             }
             //            Set<Integer> generatedSummary = mcpSolver.simpleGreedy(document.filteredSentences, document.lengthSummary);
-            Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, 3);
+            Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, document.lengthSummary);
             //            Set<Integer> generatedSummary = mcpSolver.weightedILP(document.filteredSentences, 3);
             List<String> systemSummary = new ArrayList<>();
             List<String> gsSummary = new ArrayList<>();
