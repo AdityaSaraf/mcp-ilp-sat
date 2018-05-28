@@ -3,5 +3,6 @@
 data/
 *.iml
 *.pyc
+out/
 /MCP-ILP-SAT/nbproject/private/
 /build/
