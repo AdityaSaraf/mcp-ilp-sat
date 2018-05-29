@@ -1,5 +1,15 @@
-import gurobi.GRBEnv;
-import gurobi.GRBException;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import net.sf.javailp.Constraint;
 import net.sf.javailp.Linear;
 import net.sf.javailp.OptType;
@@ -8,18 +18,8 @@ import net.sf.javailp.Result;
 import net.sf.javailp.Solver;
 import net.sf.javailp.SolverFactory;
 import net.sf.javailp.SolverFactoryGLPK;
-import net.sf.javailp.SolverFactoryGurobi;
 import net.sf.javailp.SolverFactoryLpSolve;
 import net.sf.javailp.VarType;
-import org.gnu.glpk.GLPK;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class MCPSolver {
 
@@ -64,7 +64,7 @@ public class MCPSolver {
     }
 
     public Set<Integer> unweightedILP(List<String> sentenceStrings,
-                                             int numSummarySentences){
+            int numSummarySentences) {
         Set<String> vocabulary = new HashSet<>();
         List<Set<String>> sentenceSets = new ArrayList<>(sentenceStrings.size());
         Map<String, Set<Integer>> wordToSentIdx = new HashMap<>();
@@ -79,8 +79,7 @@ public class MCPSolver {
                     set = new HashSet<>();
                     set.add(i);
                     wordToSentIdx.put(word, set);
-                }
-                else {
+                } else {
                     set.add(i);
                 }
             }
@@ -139,7 +138,7 @@ public class MCPSolver {
     }
 
     public Set<Integer> weightedILP(List<String> sentenceStrings,
-                                      int numSummarySentences) {
+            int numSummarySentences) {
         Set<String> vocabulary = new HashSet<>();
         List<Set<String>> sentenceSets = new ArrayList<>(sentenceStrings.size());
         Map<String, Set<Integer>> wordToSentIdx = new HashMap<>();
@@ -165,8 +164,7 @@ public class MCPSolver {
                     set = new HashSet<>();
                     set.add(i);
                     wordToSentIdx.put(word, set);
-                }
-                else {
+                } else {
                     set.add(i);
                 }
             }
@@ -220,5 +218,48 @@ public class MCPSolver {
         }
         tfidf.clearTF();
         return chosenIndices;
+    }
+
+    public Set<Integer> weightedMaxSAT(List<String> sentenceStrings, int numSummarySentences) {
+        tfidf.initTF(sentenceStrings);
+        MCP_MaxSAT m = new MCP_MaxSAT(sentenceStrings, numSummarySentences, tfidf);
+        tfidf.clearTF();
+        String satEncoding = m.toSAT();
+
+        try {
+            try (PrintWriter out = new PrintWriter("maxsat_encoding.txt")) {
+                out.println(satEncoding);
+            }
+
+            System.out.println("Running Z3");
+
+            String z3Path = "C:\\Users\\Rory\\Documents\\Programming\\z3-4.6.0-x64-win\\bin\\z3.exe";
+            Process process = Runtime.getRuntime().exec(z3Path + " -smt2 maxsat_encoding.txt");
+            process.waitFor(60, TimeUnit.SECONDS);
+            process.destroy();
+            Scanner s = new Scanner(process.getInputStream());
+
+            if (s.hasNext()) {
+                // The process finished correctly
+                System.out.println("Finished");
+                s.next();
+                Set<Integer> results = new HashSet();
+                int i = 0;
+                while (s.hasNext()) {
+                    if (s.next().equals("true")) {
+                        results.add(i);
+                    }
+                    i++;
+                }
+                return results;
+            } else {
+                // The process didn't terminate in time
+                System.out.println("Process didn't terminate in time");
+                return new HashSet();
+            }
+
+        } catch (IOException | InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

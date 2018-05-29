@@ -2,12 +2,10 @@ import JRouge.common.RougeSummaryModel;
 import JRouge.common.ScoreType;
 import JRouge.interfaces.IRougeSummaryModel;
 import JRouge.rouge.RougeN;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +14,7 @@ import java.util.Scanner;
 import java.util.Set;
 
 class LabelledDocument {
+
     public String fileName;
     public List<String> originalSentences;
     public List<Integer> answerNums;
@@ -24,7 +23,8 @@ class LabelledDocument {
     public Set<String> vocabulary;
     public int lengthSummary;
 
-    public LabelledDocument() {}
+    public LabelledDocument() {
+    }
 
     public LabelledDocument(String fileName, List<String> originalSentences, List<Integer> answerNums, List<String> filteredSentences,
                             List<String> abstractiveSentences, Set<String> vocabulary, int lengthSummary) {
@@ -43,7 +43,8 @@ public class Main {
     static List<String> stopWords = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
-        File directory = new File("data/law_stories_top_100");
+        //File directory = new File("data/law_stories_top_100");
+        File directory = new File("data/CNN_DailyMail_1k");
         File[] files = directory.listFiles();
 
         File stopWordFile = new File("stopwords.txt");
@@ -90,13 +91,15 @@ public class Main {
             LabelledDocument document = documents.get(i1);
 //            System.out.println(document.fileName);
             if (i1 % 20 == 0) {
-                System.out.println("Finished with "+i1);
-                System.out.println("Time elapsed: "+(System.currentTimeMillis() - startTime));
+                System.out.println("Finished with " + i1);
+                System.out.println("Time elapsed: " + (System.currentTimeMillis() - startTime));
                 System.gc();
             }
             //            Set<Integer> generatedSummary = mcpSolver.simpleGreedy(document.filteredSentences, document.lengthSummary);
-            Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, document.lengthSummary);
+            //Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, document.lengthSummary);
             //            Set<Integer> generatedSummary = mcpSolver.weightedILP(document.filteredSentences, 3);
+            Set<Integer> generatedSummary = mcpSolver.weightedMaxSAT(document.filteredSentences, document.lengthSummary);
+
             List<String> systemSummary = new ArrayList<>();
             List<String> gsSummary = new ArrayList<>();
             for (Integer i : generatedSummary) {
@@ -122,7 +125,7 @@ public class Main {
             //            }
             //            writer.flush();
         }
-        System.out.println("Average ROUGE: " + total/documents.size());
+        System.out.println("Average ROUGE: " + total / documents.size());
         return System.currentTimeMillis() - startTime;
     }
 
