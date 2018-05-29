@@ -74,12 +74,13 @@ public class Main {
         }
         // actual trials
         long total = 0;
-        for (int i = 0; i < 10; i++) {
+        int numTrials = 5;
+        for (int i = 0; i < numTrials; i++) {
             long time = run(documents, mcpSolver);
             System.out.println("Time elapsed for iteration " + i + " in ms: " + time);
             total += time;
         }
-        System.out.println("Average time: " + (total/10));
+        System.out.println("Average time: " + (total/numTrials));
     }
 
     private static long run(List<LabelledDocument> documents, MCPSolver mcpSolver) {
@@ -154,6 +155,31 @@ public class Main {
         while (scanner.hasNextLine()) {
             stopWords.add(scanner.nextLine());
         }
+    }
+
+    // to be used with non-annotated texts. only initializes fileName, originalSentences,
+    // filteredSentences, and vocabulary fields.
+    private static LabelledDocument parseText(File file) throws FileNotFoundException {
+        FileReader reader = new FileReader(file);
+        Scanner scanner =  new Scanner(reader);
+        List<String> filteredSentences = new ArrayList<>();
+        Set<String> vocabulary = new HashSet<>();
+        List<String> originalSentences = new ArrayList<>();
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            String[] sentence = line.split(" ");
+            StringBuilder sb = new StringBuilder();
+            for (String word : sentence) {
+                if (!stopWords.contains(word)) {
+                    sb.append(word).append(" ");
+                    vocabulary.add(word);
+                }
+            }
+            filteredSentences.add(sb.toString());
+            originalSentences.add(line);
+        }
+        return new LabelledDocument(file.getName(), originalSentences, null, filteredSentences,
+                null, vocabulary, -1);
     }
 
     private static LabelledDocument parseFile(File file) throws FileNotFoundException {
