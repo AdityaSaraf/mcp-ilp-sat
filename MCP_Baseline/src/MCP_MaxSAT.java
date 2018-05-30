@@ -144,7 +144,7 @@ public final class MCP_MaxSAT {
         }
         sum.append(")");
         result.append(String.format("(assert (<= %s %d))", sum.toString(), k));
-        return result.toString();
+        return result.toString()+"\n";
     }
 
     // This function implements the sequential counter described here:

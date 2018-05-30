@@ -99,7 +99,7 @@ public class Main {
             //            Set<Integer> generatedSummary = mcpSolver.simpleGreedy(document.filteredSentences, document.lengthSummary);
             //Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, document.lengthSummary);
             //            Set<Integer> generatedSummary = mcpSolver.weightedILP(document.filteredSentences, 3);
-            Set<Integer> generatedSummary = mcpSolver.unweightedMaxSAT(document.filteredSentences, document.lengthSummary, "encoding_"+document.fileName);
+            Set<Integer> generatedSummary = mcpSolver.unweightedMaxSAT(document.filteredSentences, 3, "encoding_"+document.fileName);
 
             List<String> systemSummary = new ArrayList<>();
             List<String> gsSummary = new ArrayList<>();
