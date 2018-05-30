@@ -220,21 +220,21 @@ public class MCPSolver {
         return chosenIndices;
     }
 
-    public Set<Integer> weightedMaxSAT(List<String> sentenceStrings, int numSummarySentences) {
-        tfidf.initTF(sentenceStrings);
+    public Set<Integer> unweightedMaxSAT(List<String> sentenceStrings, int numSummarySentences, String textFileName) {
+//        tfidf.initTF(sentenceStrings);
         MCP_MaxSAT m = new MCP_MaxSAT(sentenceStrings, numSummarySentences, tfidf);
-        tfidf.clearTF();
+//        tfidf.clearTF();
         String satEncoding = m.toSAT();
 
         try {
-            try (PrintWriter out = new PrintWriter("maxsat_encoding.txt")) {
+            try (PrintWriter out = new PrintWriter(textFileName)) {
                 out.println(satEncoding);
             }
 
             System.out.println("Running Z3");
 
-            String z3Path = "C:\\Users\\Rory\\Documents\\Programming\\z3-4.6.0-x64-win\\bin\\z3.exe";
-            Process process = Runtime.getRuntime().exec(z3Path + " -smt2 maxsat_encoding.txt");
+            String z3Path = "C:\\Program Files (x86)\\z3-4.6.0-x64-win\\bin\\z3.exe";
+            Process process = Runtime.getRuntime().exec(z3Path + " -smt2 "+textFileName);
             process.waitFor(60, TimeUnit.SECONDS);
             process.destroy();
             Scanner s = new Scanner(process.getInputStream());

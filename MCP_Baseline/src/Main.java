@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -50,9 +51,9 @@ public class Main {
         File stopWordFile = new File("stopwords.txt");
         populateStopWordList(stopWordFile);
 
-        File outputDir = new File("error_analysis/mcp10");
+        File outputDir = new File("error_analysis/maxSAT");
         if (!outputDir.exists()) {
-            outputDir.mkdir();
+            outputDir.mkdirs();
         }
 
         List<LabelledDocument> documents = new ArrayList<>();
@@ -70,21 +71,21 @@ public class Main {
         MCPSolver mcpSolver = new MCPSolver(tfidf);
         // warm up the JVM
         for (int i = 0; i < 3; i++) {
-            long time = run(documents, mcpSolver);
+            long time = run(documents, mcpSolver, outputDir);
             System.out.println("WARMUP: Time elapsed for iteration " + i + " in ms: " + time);
         }
         // actual trials
         long total = 0;
         int numTrials = 5;
         for (int i = 0; i < numTrials; i++) {
-            long time = run(documents, mcpSolver);
+            long time = run(documents, mcpSolver, outputDir);
             System.out.println("Time elapsed for iteration " + i + " in ms: " + time);
             total += time;
         }
         System.out.println("Average time: " + (total/numTrials));
     }
 
-    private static long run(List<LabelledDocument> documents, MCPSolver mcpSolver) {
+    private static long run(List<LabelledDocument> documents, MCPSolver mcpSolver, File outputDir) throws IOException {
         long startTime = System.currentTimeMillis();
         double total = 0;
         for (int i1 = 0; i1 < documents.size(); i1++) {
@@ -98,7 +99,7 @@ public class Main {
             //            Set<Integer> generatedSummary = mcpSolver.simpleGreedy(document.filteredSentences, document.lengthSummary);
             //Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, document.lengthSummary);
             //            Set<Integer> generatedSummary = mcpSolver.weightedILP(document.filteredSentences, 3);
-            Set<Integer> generatedSummary = mcpSolver.weightedMaxSAT(document.filteredSentences, document.lengthSummary);
+            Set<Integer> generatedSummary = mcpSolver.unweightedMaxSAT(document.filteredSentences, document.lengthSummary, "encoding_"+document.fileName);
 
             List<String> systemSummary = new ArrayList<>();
             List<String> gsSummary = new ArrayList<>();
@@ -110,20 +111,20 @@ public class Main {
             }
             double rougeScore = test(systemSummary, gsSummary);
             total += rougeScore;
-            //                        System.out.println(rougeScore);
-            //            //             prints the generated summary
-            //            File outputFile = new File(outputDir, document.fileName);
-            //            if (outputFile.exists()) {
-            //                outputFile.delete();
-            //            }
-            //            outputFile.createNewFile();
-            //            PrintWriter writer = new PrintWriter(outputFile);
-            //            for (int i : generatedSummary) {
-            //                String sent = document.originalSentences.get(i);
-            //                //                System.out.println(sent);
-            //                writer.println(sent);
-            //            }
-            //            writer.flush();
+            System.out.println(rougeScore);
+            //             prints the generated summary
+            File outputFile = new File(outputDir, document.fileName);
+            if (outputFile.exists()) {
+                outputFile.delete();
+            }
+            outputFile.createNewFile();
+            PrintWriter writer = new PrintWriter(outputFile);
+            for (int i : generatedSummary) {
+                String sent = document.originalSentences.get(i);
+                //                System.out.println(sent);
+                writer.println(sent);
+            }
+            writer.flush();
         }
         System.out.println("Average ROUGE: " + total / documents.size());
         return System.currentTimeMillis() - startTime;

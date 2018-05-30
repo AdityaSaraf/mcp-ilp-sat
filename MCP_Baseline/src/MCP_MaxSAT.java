@@ -1,4 +1,6 @@
 
+import net.sf.javailp.Linear;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -11,34 +13,53 @@ import java.util.stream.Collectors;
 
 public final class MCP_MaxSAT {
 
-    public List<Collection<String>> sentences;
+    public List<Set<String>> sentences;
     public int maxSentences;
     public Map<String, Double> wordWeights;
+    private Map<String, Set<Integer>> wordToSentIdx = new HashMap<>();
+    private Set<String> vocabulary;
+    private Map<Integer, String> dictionary;
+    private Map<String, Integer> reverseDictionary;
 
     public MCP_MaxSAT(List<String> sentenceStrings, int maxSentences, TFIDF tfidf) {
-        sentences = sentenceStrings.stream()
-                .map(s -> Arrays.asList(s.split(" "))).collect(Collectors.toList());
         this.maxSentences = maxSentences;
-        wordWeights = new HashMap();
-        for (String word : getAllWords()) {
-            wordWeights.put(word, tfidf.getTFIDF(word));
+        wordWeights = new HashMap<>();
+
+        sentences = new ArrayList<>(sentenceStrings.size());
+        vocabulary = new HashSet<>();
+        for (int i = 0; i < sentenceStrings.size(); i++) {
+            String sentenceStr = sentenceStrings.get(i);
+            if (sentenceStr.equals("")) {
+                continue;
+            }
+            String[] words = sentenceStr.split(" ");
+            Set<String> sentenceSet = new HashSet<>(Arrays.asList(words));
+            sentences.add(sentenceSet);
+            for (String word : sentenceSet) {
+                Set<Integer> set;
+                if ((set = wordToSentIdx.get(word)) == null) {
+                    set = new HashSet<>();
+                    set.add(i);
+                    wordToSentIdx.put(word, set);
+                } else {
+                    set.add(i);
+                }
+            }
+            vocabulary.addAll(sentenceSet);
         }
-    }
-
-    public Set<String> getAllWords() {
-        Set<String> allWords = new HashSet();
-        sentences.forEach(allWords::addAll);
-        return allWords;
-    }
-
-    public List<Integer> sentencesContaining(String word) {
-        List<Integer> result = new ArrayList();
-        for (int i = 0; i < sentences.size(); i++) {
-            if (sentences.get(i).contains(word)) {
-                result.add(i);
+        if (tfidf != null) {
+            for (String word : vocabulary) {
+                wordWeights.put(word, tfidf.getTFIDF(word));
             }
         }
-        return result;
+        dictionary = new HashMap<>();
+        reverseDictionary = new HashMap<>();
+        int c = 0;
+        for (String word : vocabulary) {
+            dictionary.put(c, word);
+            reverseDictionary.put(word, c);
+            c++;
+        }
     }
 
     // This function converts the MCP to a partial max-SAT encoding
@@ -46,44 +67,84 @@ public final class MCP_MaxSAT {
         StringBuilder result = new StringBuilder();
 
         // These variables represent whether each sentence is in the set
-        List<String> vars = new ArrayList();
+        List<String> sentenceVars = new ArrayList();
         for (int i = 0; i < sentences.size(); i++) {
             String varName = String.format("x_%d", i);
-            vars.add(varName);
+            sentenceVars.add(varName);
             result.append(String.format("(declare-const %s Bool)\n", varName));
         }
 
         // This part represents the constraint that we must choose a limited number of sentences
-        result.append(additionCircuit_Unary(vars, maxSentences));
+//        result.append(additionCircuit_Unary(sentenceVars, maxSentences));
+        result.append(additionZ3(sentenceVars, maxSentences));
 
         // This part represents the goal of maximizing the number of covered words
-        for (String word : getAllWords()) {
-            if (wordWeights.get(word) > 0) {
-                result.append(String.format("(assert-soft %s :weight %.2f)\n",
-                        wordCoveredCircuit(vars, word), wordWeights.get(word)));
-            }
+        for (String word : vocabulary) {
+            result.append(String.format("(assert-soft %s :weight %d)\n",
+                    wordCoveredCircuit(sentenceVars, word), 1));
         }
+
+//        // These variables represent whether the a word is chosen
+//        for (int i = 0; i < vocabulary.size(); i++) {
+//            // this var corresponds to the word: dictionary.get(i)
+//            String varName = String.format("y_%d", i);
+//            result.append(String.format("(declare-const %s Bool)\n", varName));
+//        }
+//
+//        // This represents the constraints that chosen words must come from some chosen sentence and
+//        // assigns weights to the word vars
+//        for (String word : vocabulary) {
+//            String varName = String.format("y_%d", reverseDictionary.get(word));
+//            result.append(String.format("(assert-soft %s :weight %d)\n",
+//                                            varName, 1));
+//            String wordCircuit = wordCoveredCircuit(sentenceVars, word, varName);
+//            result.append(String.format("(assert %s)\n", wordCircuit));
+//        }
 
         // Get the results from the solver
         result.append("(check-sat)\n");
-        for (String varName : vars) {
+        for (String varName : sentenceVars) {
             result.append(String.format("(eval %s)\n", varName));
         }
 
         return result.toString();
     }
 
-    // This function returns a formula that represents whether a word is covered by the chosen sentences
+    // This function returns a formula that represents whether a word is covered by the chosen sentences -- w/o wordVars
     public String wordCoveredCircuit(List<String> vars, String word) {
-        List<Integer> l = sentencesContaining(word);
-        if (l.size() == 1) {
-            return vars.get(l.get(0));
+        Set<Integer> sentences = wordToSentIdx.get(word);
+        if (sentences.size() == 1) {
+            return vars.get(sentences.iterator().next());
         }
-        String formula = "(or";
-        for (int i : sentencesContaining(word)) {
-            formula += " " + vars.get(i);
+        StringBuilder formula = new StringBuilder("(or");
+        for (int i : sentences) {
+            formula.append(" ").append(vars.get(i));
         }
         return formula + ")";
+    }
+
+    // This function returns a formula that represents whether a word is covered by the chosen sentences -- with wordVars
+        public String wordCoveredCircuit(List<String> vars, String word, String wordVarName) {
+        Set<Integer> sentences = wordToSentIdx.get(word);
+        StringBuilder formula = new StringBuilder(String.format("(or (not %s)", wordVarName));
+
+        for (int i : sentences) {
+            formula.append(" ").append(vars.get(i));
+        }
+        return formula + ")";
+    }
+
+    // This function implements addition by converts the bools to integers
+    public String additionZ3(List<String> vars, int k) {
+        StringBuilder result = new StringBuilder();
+        result.append("(define-fun b2i ((b Bool)) Int\n" + "  (ite b 1 0)\n" + ")\n");
+        StringBuilder sum = new StringBuilder("(+");
+        for (String var : vars) {
+            sum.append(" (b2i ").append(var).append(" )");
+        }
+        sum.append(")");
+        result.append(String.format("(assert (<= %s %d))", sum.toString(), k));
+        return result.toString();
     }
 
     // This function implements the sequential counter described here:
