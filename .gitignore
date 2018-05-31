@@ -6,4 +6,5 @@ data/
 out/
 /MCP-ILP-SAT/nbproject/private/
 /build/
+/error_analysis
 maxsat_encoding.txt

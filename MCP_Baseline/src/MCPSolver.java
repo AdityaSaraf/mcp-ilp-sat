@@ -234,7 +234,7 @@ public class MCPSolver {
             System.out.println("Running Z3");
 
             String z3Path = "C:\\Program Files (x86)\\z3-4.6.0-x64-win\\bin\\z3.exe";
-            Process process = Runtime.getRuntime().exec(z3Path + " -smt2 "+textFileName);
+            Process process = Runtime.getRuntime().exec(z3Path + " -smt2 " + textFileName);
             process.waitFor(60, TimeUnit.SECONDS);
             process.destroy();
             Scanner s = new Scanner(process.getInputStream());
@@ -247,6 +247,49 @@ public class MCPSolver {
                 int i = 0;
                 while (s.hasNext()) {
                     if (s.next().equals("true")) {
+                        results.add(i);
+                    }
+                    i++;
+                }
+                return results;
+            } else {
+                // The process didn't terminate in time
+                System.out.println("Process didn't terminate in time");
+                return new HashSet();
+            }
+
+        } catch (IOException | InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public Set<Integer> Z3ILP(List<String> sentenceStrings, int numSummarySentences, String textFileName) {
+//        tfidf.initTF(sentenceStrings);
+        Z3_ILP m = new Z3_ILP(sentenceStrings, numSummarySentences, tfidf);
+//        tfidf.clearTF();
+        String satEncoding = m.toILP();
+
+        try {
+            try (PrintWriter out = new PrintWriter(textFileName)) {
+                out.println(satEncoding);
+            }
+
+            System.out.println("Running Z3");
+
+            String z3Path = "C:\\Users\\Rory\\Documents\\Programming\\z3-4.6.0-x64-win\\bin\\z3.exe";
+            Process process = Runtime.getRuntime().exec(z3Path + " -smt2 " + textFileName);
+            process.waitFor(60, TimeUnit.SECONDS);
+            process.destroy();
+            Scanner s = new Scanner(process.getInputStream());
+
+            if (s.hasNext()) {
+                // The process finished correctly
+                System.out.println("Finished");
+                s.next();
+                Set<Integer> results = new HashSet();
+                int i = 0;
+                while (s.hasNext()) {
+                    if (s.next().equals("1")) {
                         results.add(i);
                     }
                     i++;

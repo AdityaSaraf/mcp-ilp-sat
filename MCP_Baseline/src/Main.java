@@ -1,3 +1,4 @@
+
 import JRouge.common.RougeSummaryModel;
 import JRouge.common.ScoreType;
 import JRouge.interfaces.IRougeSummaryModel;
@@ -28,7 +29,7 @@ class LabelledDocument {
     }
 
     public LabelledDocument(String fileName, List<String> originalSentences, List<Integer> answerNums, List<String> filteredSentences,
-                            List<String> abstractiveSentences, Set<String> vocabulary, int lengthSummary) {
+            List<String> abstractiveSentences, Set<String> vocabulary, int lengthSummary) {
         this.fileName = fileName;
         this.originalSentences = originalSentences;
         this.answerNums = answerNums;
@@ -82,7 +83,7 @@ public class Main {
             System.out.println("Time elapsed for iteration " + i + " in ms: " + time);
             total += time;
         }
-        System.out.println("Average time: " + (total/numTrials));
+        System.out.println("Average time: " + (total / numTrials));
     }
 
     private static long run(List<LabelledDocument> documents, MCPSolver mcpSolver, File outputDir) throws IOException {
@@ -99,7 +100,8 @@ public class Main {
             //            Set<Integer> generatedSummary = mcpSolver.simpleGreedy(document.filteredSentences, document.lengthSummary);
             //Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, document.lengthSummary);
             //            Set<Integer> generatedSummary = mcpSolver.weightedILP(document.filteredSentences, 3);
-            Set<Integer> generatedSummary = mcpSolver.unweightedMaxSAT(document.filteredSentences, 3, "encoding_"+document.fileName);
+            //Set<Integer> generatedSummary = mcpSolver.unweightedMaxSAT(document.filteredSentences, 3, "encoding_"+document.fileName);
+            Set<Integer> generatedSummary = mcpSolver.Z3ILP(document.filteredSentences, 3, "encoding_" + document.fileName);
 
             List<String> systemSummary = new ArrayList<>();
             List<String> gsSummary = new ArrayList<>();
@@ -155,7 +157,7 @@ public class Main {
 
     private static void populateStopWordList(File file) throws FileNotFoundException {
         FileReader reader = new FileReader(file);
-        Scanner scanner =  new Scanner(reader);
+        Scanner scanner = new Scanner(reader);
         while (scanner.hasNextLine()) {
             stopWords.add(scanner.nextLine());
         }
@@ -165,7 +167,7 @@ public class Main {
     // filteredSentences, and vocabulary fields.
     private static LabelledDocument parseText(File file) throws FileNotFoundException {
         FileReader reader = new FileReader(file);
-        Scanner scanner =  new Scanner(reader);
+        Scanner scanner = new Scanner(reader);
         List<String> filteredSentences = new ArrayList<>();
         Set<String> vocabulary = new HashSet<>();
         List<String> originalSentences = new ArrayList<>();
@@ -188,7 +190,7 @@ public class Main {
 
     private static LabelledDocument parseFile(File file) throws FileNotFoundException {
         FileReader reader = new FileReader(file);
-        Scanner scanner =  new Scanner(reader);
+        Scanner scanner = new Scanner(reader);
         List<String> filteredSentences = new ArrayList<>();
         Set<String> vocabulary = new HashSet<>();
         List<Integer> answerNums = new ArrayList<>();
@@ -219,7 +221,7 @@ public class Main {
             lineNum++;
         }
         return new LabelledDocument(file.getName(), originalSentences, answerNums, filteredSentences,
-                                    summarySentences, vocabulary, lengthSummary);
+                summarySentences, vocabulary, lengthSummary);
     }
 
     private static void filter(Set<String> sentenceSet) {

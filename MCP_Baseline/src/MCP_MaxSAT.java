@@ -1,15 +1,11 @@
 
-import net.sf.javailp.Linear;
-
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class MCP_MaxSAT {
 
@@ -100,7 +96,6 @@ public final class MCP_MaxSAT {
 //            String wordCircuit = wordCoveredCircuit(sentenceVars, word, varName);
 //            result.append(String.format("(assert %s)\n", wordCircuit));
 //        }
-
         // Get the results from the solver
         result.append("(check-sat)\n");
         for (String varName : sentenceVars) {
@@ -124,7 +119,7 @@ public final class MCP_MaxSAT {
     }
 
     // This function returns a formula that represents whether a word is covered by the chosen sentences -- with wordVars
-        public String wordCoveredCircuit(List<String> vars, String word, String wordVarName) {
+    public String wordCoveredCircuit(List<String> vars, String word, String wordVarName) {
         Set<Integer> sentences = wordToSentIdx.get(word);
         StringBuilder formula = new StringBuilder(String.format("(or (not %s)", wordVarName));
 
@@ -144,7 +139,7 @@ public final class MCP_MaxSAT {
         }
         sum.append(")");
         result.append(String.format("(assert (<= %s %d))", sum.toString(), k));
-        return result.toString()+"\n";
+        return result.toString() + "\n";
     }
 
     // This function implements the sequential counter described here:
