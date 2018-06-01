@@ -1,0 +1,4 @@
+#!/bin/bash
+for filename in *; do
+	maxhs filename
+done

@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class MCP_MaxSAT {
 
@@ -64,7 +66,7 @@ public final class MCP_MaxSAT {
 
         // These variables represent whether each sentence is in the set
         List<String> sentenceVars = new ArrayList();
-        for (int i = 0; i < sentences.size(); i++) {
+        for (int i = 1; i <= sentences.size(); i++) {
             String varName = String.format("x_%d", i);
             sentenceVars.add(varName);
             result.append(String.format("(declare-const %s Bool)\n", varName));
@@ -103,6 +105,48 @@ public final class MCP_MaxSAT {
         }
 
         return result.toString();
+
+        // The following code generated wcnf files:
+
+//        String wcnf = result.toString();
+//        int varCount = 1;
+//        for (String sentenceVar : sentenceVars) {
+//            wcnf = wcnf.replaceAll(sentenceVar, String.valueOf(varCount));
+//            varCount++;
+//        }
+//        String[] lines = wcnf.split("\n");
+//        List<String> auxVars = new ArrayList<>();
+//        for (int i = varCount-1; i < lines.length; i++) {
+//            String line = lines[i];
+//            if (line.startsWith("(declare-const")) {
+//                auxVars.add(line.split(" ")[1]);
+//            }
+//        }
+//        for (String auxVar: auxVars) {
+//            wcnf = wcnf.replaceAll(auxVar, String.valueOf(varCount));
+//            varCount++;
+//        }
+//        int maxWeight = countOccurrences(wcnf, "assert-soft") + 1;
+//        wcnf = wcnf.replaceAll("\\(not (\\d+)\\)", "-$1");
+//        wcnf = wcnf.replaceAll("\\(declare-const .*\\)\n", "");
+//        wcnf = wcnf.replaceAll("\\(assert (.*)\\)", maxWeight + " $1 0");
+//        wcnf = wcnf.replaceAll("\\(or (.*)\\)", "$1");
+//        wcnf = wcnf.replaceAll("\\(assert-soft (.*)\\)", "1 $1 0");
+//        wcnf = wcnf.replaceAll(":weight 1", "");
+//        wcnf = wcnf.replaceAll("  ", " ");
+//        int numClauses = wcnf.split("\n").length;
+//        wcnf = String.format("p wcnf %d %d %d\n", varCount-1, numClauses, maxWeight) + wcnf;
+//        return wcnf;
+    }
+
+    private int countOccurrences(String string, String substr) {
+        Pattern p = Pattern.compile(substr);
+        Matcher m = p.matcher(string);
+        int count = 0;
+        while (m.find()) {
+            count++;
+        }
+        return count;
     }
 
     // This function returns a formula that represents whether a word is covered by the chosen sentences -- w/o wordVars

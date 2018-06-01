@@ -24,9 +24,11 @@ import net.sf.javailp.VarType;
 public class MCPSolver {
 
     private TFIDF tfidf;
+    private String z3path;
 
-    public MCPSolver(TFIDF tfidf) {
+    public MCPSolver(TFIDF tfidf, String z3path) {
         this.tfidf = tfidf;
+        this.z3path = z3path;
     }
 
     public Set<Integer> simpleGreedy(List<String> sentenceStrings, int numSummarySentences) {
@@ -232,9 +234,7 @@ public class MCPSolver {
             }
 
             System.out.println("Running Z3");
-
-            String z3Path = "C:\\Program Files (x86)\\z3-4.6.0-x64-win\\bin\\z3.exe";
-            Process process = Runtime.getRuntime().exec(z3Path + " -smt2 " + textFileName);
+            Process process = Runtime.getRuntime().exec(z3path + " -smt2 " + textFileName);
             process.waitFor(60, TimeUnit.SECONDS);
             process.destroy();
             Scanner s = new Scanner(process.getInputStream());
@@ -276,8 +276,7 @@ public class MCPSolver {
 
             System.out.println("Running Z3");
 
-            String z3Path = "C:\\Users\\Rory\\Documents\\Programming\\z3-4.6.0-x64-win\\bin\\z3.exe";
-            Process process = Runtime.getRuntime().exec(z3Path + " -smt2 " + textFileName);
+            Process process = Runtime.getRuntime().exec(z3path + " -smt2 " + textFileName);
             process.waitFor(60, TimeUnit.SECONDS);
             process.destroy();
             Scanner s = new Scanner(process.getInputStream());

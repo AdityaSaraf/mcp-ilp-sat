@@ -69,7 +69,7 @@ public class Main {
 //        }
 
         TFIDF tfidf = null;//new TFIDF(documentSentences);
-        MCPSolver mcpSolver = new MCPSolver(tfidf);
+        MCPSolver mcpSolver = new MCPSolver(tfidf, "C:\\Program Files (x86)\\z3-4.6.0-x64-win\\bin\\z3.exe");
         // warm up the JVM
         for (int i = 0; i < 3; i++) {
             long time = run(documents, mcpSolver, outputDir);
@@ -89,7 +89,7 @@ public class Main {
     private static long run(List<LabelledDocument> documents, MCPSolver mcpSolver, File outputDir) throws IOException {
         long startTime = System.currentTimeMillis();
         double total = 0;
-        for (int i1 = 0; i1 < documents.size(); i1++) {
+        for (int i1 = 0; i1 < 10; i1++) {
             LabelledDocument document = documents.get(i1);
 //            System.out.println(document.fileName);
             if (i1 % 20 == 0) {
@@ -97,11 +97,9 @@ public class Main {
                 System.out.println("Time elapsed: " + (System.currentTimeMillis() - startTime));
                 System.gc();
             }
-            //            Set<Integer> generatedSummary = mcpSolver.simpleGreedy(document.filteredSentences, document.lengthSummary);
             //Set<Integer> generatedSummary = mcpSolver.unweightedILP(document.filteredSentences, document.lengthSummary);
-            //            Set<Integer> generatedSummary = mcpSolver.weightedILP(document.filteredSentences, 3);
-            //Set<Integer> generatedSummary = mcpSolver.unweightedMaxSAT(document.filteredSentences, 3, "encoding_"+document.fileName);
-            Set<Integer> generatedSummary = mcpSolver.Z3ILP(document.filteredSentences, 3, "encoding_" + document.fileName);
+            Set<Integer> generatedSummary = mcpSolver.unweightedMaxSAT(document.filteredSentences, 3, "encoding_"+document.fileName);
+//            Set<Integer> generatedSummary = mcpSolver.Z3ILP(document.filteredSentences, 3, "encoding_" + document.fileName);
 
             List<String> systemSummary = new ArrayList<>();
             List<String> gsSummary = new ArrayList<>();
@@ -128,7 +126,7 @@ public class Main {
             }
             writer.flush();
         }
-        System.out.println("Average ROUGE: " + total / documents.size());
+        System.out.println("Average ROUGE: " + total / 10);
         return System.currentTimeMillis() - startTime;
     }
 
